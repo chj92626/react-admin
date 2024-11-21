@@ -1,6 +1,8 @@
 import React from "react";
 import LayOuts from "../layouts/index";
 import Login from "../pages/login";
+import Overview from "../pages/Overview";
+import Stats from "../pages/Stats/index";
 const routes = [
   {
     path: "/",
@@ -24,14 +26,14 @@ const routes = [
           {
             path: "/dashboard/overview",
             name: "Overview",
-            component: <>Overview</>, // 子页面
+            component: <Overview></Overview>, // 子页面
             hide: false,
           },
           {
             path: "/dashboard/stats",
             name: "Stats",
-            component: <>Stats</>, // 子页面
-            hide: true,
+            component: <Stats></Stats>, // 子页面
+            hide: false,
           },
         ],
       },
