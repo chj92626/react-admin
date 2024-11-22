@@ -7,8 +7,7 @@ import { LoadingOutlined } from "@ant-design/icons";
 const { TextArea } = Input;
 
 const PptxViewer: React.FC = () => {
-  const pptUrl =
-    "https://dev-nts2024-truthaid-s3.truth-ai.com.cn/public/test.pptx";
+  const pptUrl = "https://dev-nts2024-truthaid-s3.truth-ai.com.cn/public/test.pptx";
   const [slideImages, setSlideImages] = useState<string[]>([]);
   const [slideContents, setSlideContents] = useState<any[]>([]);
   const [selectedSlideIndex, setSelectedSlideIndex] = useState<number>(0);
@@ -124,39 +123,17 @@ const PptxViewer: React.FC = () => {
         const elements = [];
         const spElements = slideDoc.getElementsByTagName("p:sp");
 
-        let currentY = 10; // 用于跟踪文本的 Y 位置
-
         for (let sp of spElements) {
-          const spPr = sp.getElementsByTagName("p:spPr")[0];
-          const xfrm = spPr?.getElementsByTagName("a:xfrm")[0];
-          const off = xfrm?.getElementsByTagName("a:off")[0];
-
-          // 提取位置信息
-          let x = 10;
-          let y = currentY; // 默认使用当前 Y 位置
-
-          if (off) {
-            x = parseInt(off.getAttribute("x"), 10) / 12700;
-            y = parseInt(off.getAttribute("y"), 10) / 9000;
-          }
-          console.log("sp---------------", sp);
-
           const tElements = sp.getElementsByTagName("a:t");
           const rPrElements = sp.getElementsByTagName("a:rPr");
 
           for (let i = 0; i < tElements.length; i++) {
             const text = tElements[i].textContent || "";
-            // console.log("rPrElements", rPrElements);
-
             const rPr = rPrElements[i];
 
             let fontSize = "20px";
             let color = "#000000";
             let typeface = "Arial";
-            let fontWeight = "normal";
-            let fontStyle = "normal";
-            let pitchFamily = "";
-            let charset = "";
 
             if (rPr) {
               const sz = rPr.getAttribute("sz");
@@ -174,55 +151,11 @@ const PptxViewer: React.FC = () => {
 
               const latin = rPr.getElementsByTagName("a:latin")[0];
               if (latin) {
-                typeface = latin.getAttribute("typeface") || typeface;
-                pitchFamily = latin.getAttribute("pitchFamily") || pitchFamily;
-                charset = latin.getAttribute("charset") || charset;
-              }
-
-              const ea = rPr.getElementsByTagName("a:ea")[0];
-              if (ea) {
-                typeface = ea.getAttribute("typeface") || typeface;
-                pitchFamily = ea.getAttribute("pitchFamily") || pitchFamily;
-                charset = ea.getAttribute("charset") || charset;
-              }
-
-              const cs = rPr.getElementsByTagName("a:cs")[0];
-              if (cs) {
-                typeface = cs.getAttribute("typeface") || typeface;
-                pitchFamily = cs.getAttribute("pitchFamily") || pitchFamily;
-                charset = cs.getAttribute("charset") || charset;
-              }
-
-              // 检查加粗和斜体
-              if (rPr.getAttribute("b") === "1") {
-                fontWeight = "bold";
-              }
-              if (rPr.getAttribute("i") === "1") {
-                fontStyle = "italic";
+                typeface = latin.getAttribute("typeface") || "Arial";
               }
             }
 
-            // 如果没有明确的 y 位置，使用 currentY 并增加行高
-            if (!off) {
-              y = currentY;
-            }
-
-            elements.push({
-              text,
-              fontSize,
-              color,
-              typeface,
-              fontWeight,
-              fontStyle,
-              pitchFamily,
-              charset,
-              x,
-              y,
-            });
-
-            // 更新 currentY，避免重叠
-            const textHeight = parseInt(fontSize, 10);
-            currentY = y + textHeight + 5; // 5 是额外间距
+            elements.push({ text, fontSize, color, typeface });
           }
         }
 
@@ -278,102 +211,19 @@ const PptxViewer: React.FC = () => {
             });
           }
 
-          let paddingTop = 40; // 内边距
-          const calculateTextHeight = (
-            context: CanvasRenderingContext2D,
-            text: string,
-            fontSize: string
-          ) => {
-            context.font = fontSize;
-            const metrics = context.measureText(text);
-            return (
-              metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent
-            );
-          };
-          function drawTextWithWrapping(
-            context: CanvasRenderingContext2D,
-            text: string,
-            x: number,
-            y: number,
-            maxWidth: number,
-            lineHeight: number
-          ): void {
-            const words = text.split(" ");
-            let line = "";
-            let currentY = y;
-
-            words.forEach((word, index) => {
-              const testLine = line + word + " ";
-              const metrics = context.measureText(testLine);
-              const testWidth = metrics.width;
-
-              if (testWidth > maxWidth && index > 0) {
-                context.fillText(line, x, currentY);
-                line = word + " ";
-                currentY += lineHeight;
-              } else {
-                line = testLine;
-              }
-            });
-
-            context.fillText(line, x, currentY);
-          }
-
           // 绘制带样式的文本元素
-          elements.forEach(
-            (
-              {
-                text,
-                fontSize,
-                color,
-                typeface,
-                fontWeight,
-                fontStyle,
-                pitchFamily,
-                charset,
-                x,
-                y,
-              },
-              index
-            ) => {
-              context.fillStyle = color;
-              context.font = `${fontStyle} ${fontWeight} ${fontSize} ${typeface} `;
-
-              // 记录字体信息以供调试
-              console.log(
-                `Text: ${text}, x: ${x}, y: ${y}, typeface: ${typeface}, fontWeight: ${fontWeight}, fontStyle: ${fontStyle}, color: ${color}, fontSize: ${fontSize}, PitchFamily: ${pitchFamily}, Charset: ${charset}`
-              );
-              // 检查是否与前一个元素的 y 相同
-              if (
-                index > 0 &&
-                elements[index - 1].y === y &&
-                elements[index - 1].x === x
-              ) {
-                y = currentY;
-              }
-              const maxWidth = canvas.width - x - 40; // 减去一些内边距
-              const lineHeight = parseInt(fontSize, 10) + 10; // 行高
-              drawTextWithWrapping(
-                context,
-                text,
-                x,
-                y + paddingTop,
-                maxWidth,
-                lineHeight
-              );
-
-              // 更新 currentY，避免重叠
-              const textHeight = calculateTextHeight(context, text, fontSize);
-              currentY = y + textHeight + lineHeight + 10; // 10 是额外间距
-            }
-          );
+          elements.forEach(({ text, fontSize, color, typeface }, index) => {
+            context.fillStyle = color;
+            context.font = `${fontSize} ${typeface}`;
+            context.fillText(text, 50, 50 + index * 30);
+          });
 
           // 将画布转换为图片
           const slideImage = canvas.toDataURL("image/png");
 
           return {
             slideImage,
-            elements: elements.map((e) => e.text).join("\n"),
+            elements: elements.map(e => e.text).join("\n"),
             backgroundColor,
             backgroundImage,
           };
