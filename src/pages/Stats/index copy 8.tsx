@@ -1,3 +1,4 @@
+// 文本内容换行
 import React, { useState, useEffect, useRef } from "react";
 import JSZip from "jszip";
 import { Spin, Input } from "antd";
@@ -5,23 +6,7 @@ import EmptyPPTIcon from "@/assets/empty-ppt.svg";
 import { LoadingOutlined } from "@ant-design/icons";
 
 const { TextArea } = Input;
-interface SlideElement {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  rotation: number;
-  fillColor: string;
-  borderColor: string;
-  borderWidth: number;
-  texts: string[];
-}
 
-interface SlideContent {
-  slideImage: string;
-  elements: string;
-  backgroundColor: string;
-}
 const PptxViewer: React.FC = () => {
   const pptUrl =
     "https://dev-nts2024-truthaid-s3.truth-ai.com.cn/public/test.pptx";
@@ -185,19 +170,15 @@ const PptxViewer: React.FC = () => {
           const solidFill = spPr?.getElementsByTagName("a:solidFill")[0];
           let fillColor = "#00000000";
           if (solidFill) {
-            console.log('solidFill',solidFill);
-            
             const srgbClr = solidFill.getElementsByTagName("a:srgbClr")[0];
             if (srgbClr) {
               fillColor = `#${srgbClr.getAttribute("val")}`;
-              console.log(fillColor);
-              
             }
           }
 
           // 边框
           const ln = spPr?.getElementsByTagName("a:ln")[0];
-          let borderColor = "#00000000",
+          let borderColor = "#000000",
             borderWidth = 0;
           if (ln) {
             const lnFill = ln.getElementsByTagName("a:solidFill")[0];
@@ -224,7 +205,7 @@ const PptxViewer: React.FC = () => {
               const text = tElements[i].textContent || "";
               const rPr = rPrElements[i];
 
-              let fontSize = "14px",
+              let fontSize = "20px",
                 color = "#000000",
                 typeface = "Arial",
                 fontWeight = "normal",
@@ -232,7 +213,7 @@ const PptxViewer: React.FC = () => {
               if (rPr) {
                 const sz = rPr.getAttribute("sz");
                 if (sz) {
-                  fontSize = `${parseInt(sz) / 140}pt`;
+                  fontSize = `${parseInt(sz, 10) / 100}pt`;
                 }
 
                 const textFill = rPr.getElementsByTagName("a:solidFill")[0];
@@ -309,18 +290,22 @@ const PptxViewer: React.FC = () => {
             maxWidth: number,
             lineHeight: number
           ): number {
+            console.log("text", text);
+
             const words = text.split("");
             let line = "";
             let currentY = y;
+            console.log(words);
 
             words.forEach((word, index) => {
               const testLine = line + word + "";
               const metrics = context.measureText(testLine);
               const testWidth = metrics.width;
 
+              console.log(line, x, currentY);
               if (testWidth > maxWidth && line !== "") {
                 context.fillText(line, x, currentY);
-                line = word + "";
+                line = word + " ";
                 currentY += lineHeight;
               } else {
                 line = testLine;
@@ -337,26 +322,17 @@ const PptxViewer: React.FC = () => {
 
           // 绘制形状和文本
           elements.forEach(
-            (
-              {
-                x,
-                y,
-                width,
-                height,
-                rotation,
-                fillColor,
-                borderColor,
-                borderWidth,
-                texts,
-              },
-              index
-            ) => {
-              if (index > 0) {
-                const prevElement = elements[index - 1];
-                if (Math.abs(x - prevElement.x) < 5) {
-                  elements.x += 10; // 调整 x 位置，避免重叠
-                }
-              }
+            ({
+              x,
+              y,
+              width,
+              height,
+              rotation,
+              fillColor,
+              borderColor,
+              borderWidth,
+              texts,
+            }) => {
               context.save();
               context.translate(x + width / 2, y + height / 2);
               context.rotate((rotation * Math.PI) / 180);
@@ -371,15 +347,7 @@ const PptxViewer: React.FC = () => {
 
               context.restore();
 
-              // 计算文本总高度
-              let totalTextHeight = 0;
-              texts.forEach(({ fontSize }) => {
-                const lineHeight = parseInt(fontSize, 10) + 10; // 增加行高
-                totalTextHeight += lineHeight;
-              });
-
-              // 计算初始 y 位置，使文本居中
-              let currentY = y + (height - totalTextHeight) / 2 + 10; // 添加内边距调整
+              let currentY = y; // 初始文本 y 位置
 
               texts.forEach(
                 ({
@@ -392,14 +360,15 @@ const PptxViewer: React.FC = () => {
                 }) => {
                   context.fillStyle = color;
                   context.font = `${fontStyle} ${fontWeight} ${fontSize} ${typeface}`;
-                  const lineHeight = parseInt(fontSize, 10) + 10; // 增加行高
-                  const maxWidth = width - 20; // 考虑左右内边距
+
+                  const lineHeight = parseInt(fontSize, 10) + 8; // 行高调整
+                  const maxWidth = width; // 考虑文本框的内边距
 
                   currentY = drawTextWithWrapping(
                     context,
                     text,
-                    x + 10,
-                    currentY+8,
+                    x,
+                    currentY + 5,
                     maxWidth,
                     lineHeight
                   );
